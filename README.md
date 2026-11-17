@@ -32,16 +32,13 @@
 - **React 19** (`react`, `react-dom`) – Modern component architecture with hooks and context state management.
 - **Vite 8** – Fast build tooling and Hot Module Replacement (HMR).
 - **React Router** (`react-router-dom`) – Client-side routing and page management.
-- **Lucide React** – Clean, modern UI iconography.
-- **Oxlint** – High-performance JavaScript/JSX linting.
+- **React** – Clean, modern UI iconography.
 - **Custom CSS** – Responsive styling with flexbox/grid layout and polished UI design.
 
 ### Backend
 - **Node.js** & **Express 5** (`express`) – High-performance RESTful API microservice.
 - **MongoDB & Mongoose 8** (`mongoose`) – Document database schema validation, relational refs, and automatic indexing.
 - **JSON Web Tokens (JWT)** (`jsonwebtoken`) – Stateless API authentication and protected route middleware.
-- **bcryptjs** – Secure salted password hashing.
-- **CORS** (`cors`) – Cross-Origin Resource Sharing middleware.
 - **dotenv** – Secure environment variable configuration.
 - **Nodemon** – Development live-reload utility.
 - **PostgreSQL / pg** (`pg`) – Optional relational database adapter and table migration support (`db.js`).
@@ -202,7 +199,8 @@ The platform currently operates on a curated seed repository of speaking engagem
 
 ## 👥 Contributors
 
-- **Rucha Patel** ([@ruchapatel07](https://github.com/ruchapatel07)) – Platform Architecture, Full-Stack Development & UI Design
+- **Rucha Patel** ([@ruchapatel07](https://github.com/ruchapatel07))
+- **Rita Mangaliya**([@ritamangaliya](https://github.com/ritamangaliya))
 
 ---
 
