@@ -1,4 +1,9 @@
-const API_BASE_URL = "http://localhost:5000/api";
+// Resolve API Base URL from environment (Vite) with fallback to local development
+const rawBaseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
+const cleanBaseUrl = rawBaseUrl.replace(/\/+$/, "");
+const API_BASE_URL = cleanBaseUrl.endsWith("/api")
+  ? cleanBaseUrl
+  : `${cleanBaseUrl}/api`;
 
 async function request(endpoint, { method = "GET", body, token } = {}) {
   const headers = { "Content-Type": "application/json" };

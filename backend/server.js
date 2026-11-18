@@ -13,7 +13,28 @@ const Gig = require("./models/Gig");
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-app.use(cors());
+// Allowed frontend origins for CORS
+const allowedOrigins = [
+  "https://speaker-gig-platform.onrender.com",
+  "http://localhost:5173",
+  "http://localhost:3000",
+  "http://127.0.0.1:5173",
+  "http://127.0.0.1:3000",
+  ...(process.env.FRONTEND_URL ? [process.env.FRONTEND_URL.replace(/\/+$/, "")] : []),
+];
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps, curl, or same-origin requests)
+      if (!origin || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error(`CORS blocked for origin: ${origin}`));
+    },
+    credentials: true,
+  })
+);
 app.use(express.json());
 
 // Basic server test
