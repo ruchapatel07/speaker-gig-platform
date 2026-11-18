@@ -38,8 +38,16 @@ export const profileAPI = {
 export const gigsAPI = {
   list: (params, token) =>
     request(`/gigs?${new URLSearchParams(params || {})}`, { token }),
+  get: (id, token) => request(`/gigs/${id}`, { token }),
+  create: (payload, token) => request("/gigs", { method: "POST", body: payload, token }),
+  update: (id, payload, token) => request(`/gigs/${id}`, { method: "PUT", body: payload, token }),
+  delete: (id, token) => request(`/gigs/${id}`, { method: "DELETE", token }),
 };
 
 export const statsAPI = {
   get: (token) => request("/stats", { token }),
+};
+
+export const healthAPI = {
+  check: () => request("/health"),
 };

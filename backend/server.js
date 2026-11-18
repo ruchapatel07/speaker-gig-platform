@@ -27,19 +27,45 @@ app.use(
   cors({
     origin: (origin, callback) => {
       // Allow requests with no origin (like mobile apps, curl, or same-origin requests)
-      if (!origin || allowedOrigins.includes(origin)) {
+      if (
+        !origin ||
+        allowedOrigins.includes(origin) ||
+        /^https:\/\/speaker-gig-platform.*\.onrender\.com$/.test(origin)
+      ) {
         return callback(null, true);
       }
       return callback(new Error(`CORS blocked for origin: ${origin}`));
     },
     credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 app.use(express.json());
 
-// Basic server test
+// Basic server test & health endpoints
 app.get("/", (req, res) => {
   res.json({ message: "SpeakHub backend is running!" });
+});
+
+app.get("/api/health", (req, res) => {
+  res.json({
+    status: "ok",
+    message: "SpeakHub backend is running and healthy!",
+    database: mongoose.connection.readyState === 1 ? "connected" : "disconnected",
+    databaseName: mongoose.connection.name || "unknown",
+    timestamp: new Date().toISOString(),
+  });
+});
+
+app.get("/health", (req, res) => {
+  res.json({
+    status: "ok",
+    message: "SpeakHub backend is running and healthy!",
+    database: mongoose.connection.readyState === 1 ? "connected" : "disconnected",
+    databaseName: mongoose.connection.name || "unknown",
+    timestamp: new Date().toISOString(),
+  });
 });
 
 // Register a new user
@@ -337,6 +363,129 @@ app.get("/api/gigs", async (req, res) => {
   }
 });
 
+// GET /api/gigs/:id — get single gig details
+app.get("/api/gigs/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid gig ID format." });
+    }
+
+    const gig = await Gig.findById(id);
+    if (!gig) {
+      return res.status(404).json({ message: "Gig not found." });
+    }
+
+    res.json({ gig });
+  } catch (error) {
+    console.error("Gig fetch error:", error.message);
+    res.status(500).json({ message: "Unable to fetch gig details." });
+  }
+});
+
+// POST /api/gigs — create a new gig (authenticated)
+app.post("/api/gigs", authenticateToken, async (req, res) => {
+  try {
+    const { title, description, location, date, category, honorarium, image, organizer } = req.body;
+
+    if (!title || !description || !location || !date || !category) {
+      return res.status(400).json({
+        message: "Title, description, location, date, and category are required.",
+      });
+    }
+
+    const gig = await Gig.create({
+      title: title.trim(),
+      description: description.trim(),
+      location: location.trim(),
+      date: date.trim(),
+      category: category.trim(),
+      honorarium: honorarium?.trim() || "Voluntary",
+      image: image?.trim() || "",
+      organizer: organizer?.trim() || "SpeakHub",
+      status: "open",
+    });
+
+    res.status(201).json({
+      message: "Gig created successfully.",
+      gig,
+    });
+  } catch (error) {
+    console.error("Gig creation error:", error.message);
+    res.status(500).json({ message: "Unable to create gig." });
+  }
+});
+
+// PUT /api/gigs/:id — update a gig (authenticated)
+app.put("/api/gigs/:id", authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid gig ID format." });
+    }
+
+    const allowedFields = [
+      "title",
+      "description",
+      "location",
+      "date",
+      "category",
+      "honorarium",
+      "image",
+      "organizer",
+      "status",
+    ];
+
+    const updates = {};
+    for (const field of allowedFields) {
+      if (req.body[field] !== undefined) {
+        updates[field] = req.body[field];
+      }
+    }
+
+    const gig = await Gig.findByIdAndUpdate(
+      id,
+      { $set: updates },
+      { new: true, runValidators: true }
+    );
+
+    if (!gig) {
+      return res.status(404).json({ message: "Gig not found." });
+    }
+
+    res.json({
+      message: "Gig updated successfully.",
+      gig,
+    });
+  } catch (error) {
+    console.error("Gig update error:", error.message);
+    res.status(500).json({ message: "Unable to update gig." });
+  }
+});
+
+// DELETE /api/gigs/:id — delete a gig (authenticated)
+app.delete("/api/gigs/:id", authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid gig ID format." });
+    }
+
+    const gig = await Gig.findByIdAndDelete(id);
+    if (!gig) {
+      return res.status(404).json({ message: "Gig not found." });
+    }
+
+    res.json({
+      message: "Gig deleted successfully.",
+      id,
+    });
+  } catch (error) {
+    console.error("Gig delete error:", error.message);
+    res.status(500).json({ message: "Unable to delete gig." });
+  }
+});
+
 // GET /api/stats — dashboard stats (counts from DB)
 app.get("/api/stats", authenticateToken, async (req, res) => {
   try {
@@ -489,9 +638,10 @@ async function startServer() {
       throw new Error("JWT_SECRET is missing from the backend .env file.");
     }
 
-    await mongoose.connect(process.env.MONGODB_URI);
+    const dbName = process.env.MONGODB_DB_NAME || "speakhub";
+    await mongoose.connect(process.env.MONGODB_URI, { dbName });
 
-    console.log("MongoDB connected successfully.");
+    console.log(`MongoDB connected successfully to database: ${mongoose.connection.name}`);
 
     await seedGigs();
 
